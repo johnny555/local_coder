@@ -48,26 +48,6 @@ class CodeRequest(BaseModel):
 app = FastAPI()
 
 
-@app.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket):
-    await websocket.accept()
-    await websocket.send_json({"status": "connected", "message": "Ready to execute Python code"})
-    
-    try:
-        while True:
-            # Wait for code from client
-            data = await websocket.receive_json()
-            code = data.get('code', '')
-            
-            # Execute the code
-            result = execute_code(code)
-            
-            # Send back the results
-            await websocket.send_json(result)
-            
-    except Exception as e:
-        print(f"WebSocket error: {e}")
-
 @app.post("/execute")
 async def execute(code_request: CodeRequest):
     return execute_code(code_request.code)
@@ -76,15 +56,3 @@ async def execute(code_request: CodeRequest):
 @app.get("/")
 async def root():
     return {"message": "Hello from your local server!"}
-
-@app.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket):
-    await websocket.accept()
-    await websocket.send_text("Connected to local server!")
-    
-    try:
-        while True:
-            data = await websocket.receive_text()
-            await websocket.send_text(f"Message received: {data}")
-    except:
-        print("Client disconnected")
