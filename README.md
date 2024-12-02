@@ -50,6 +50,8 @@ Add the following code to a code cell
 
 ```
 import sqlite3
+import requests
+
 NGROK_ADDRESS='https://somengrok.free.app/'
 def get_call_by_tag(tag_name):
     # Find the code block
