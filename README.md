@@ -49,7 +49,8 @@ Add the following code to a code cell
 
 
 ```
-NGROK_ADDRESS='https://somengrok.free.app/`
+import sqlite3
+NGROK_ADDRESS='https://somengrok.free.app/'
 def get_call_by_tag(tag_name):
     # Find the code block
     try:
@@ -74,7 +75,11 @@ def get_call_by_tag(tag_name):
             # Send to your local server
             response = requests.post(f'{NGROK_ADDRESS}/execute', 
                                   json={'code': code})
-            return response.json()
+            if stdout.getvalue():
+                return stdout.getvalue()
+            elif stderr.getvalue():
+                return stderr.getvalue()
+            return "success=True"
         else:
             return f"No code block found with tag '{tag_name}'"
             
