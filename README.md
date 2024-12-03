@@ -35,60 +35,40 @@ Now connect it to the ngrok endpoint:
 
 Note down your enpoints address. 
 
-## Setting up on remote. 
+## generate secret key 
 
-We are going to be assuming you're on a solveit instance, and so there is a sqlite db with your messages. 
+You'll need to create a secret key to be shared between your local computer and solveit. 
 
-To pass a message to the local interpreter, you'll need to tag the cell in the following format 
-
-`# tag = TAGNAME`
-
-These tags are global accross all dialogs, so make sure its unique. 
-
-Add the following code to a code cell 
-
+use this code to make one:
 
 ```
-import sqlite3
-import requests
+import secrets
+import base64
 
-NGROK_ADDRESS='https://somengrok.free.app/'
-def get_call_by_tag(tag_name):
-    # Find the code block
-    try:
-        conn = sqlite3.connect('data.db')
-        cursor = conn.cursor()
-        search_pattern = f"# tag = {tag_name}"
-        cursor.execute("""
-            SELECT content 
-            FROM message 
-            WHERE content LIKE ?
-            ORDER BY time_run DESC
-        """, (f'%{search_pattern}%',))
-        
-        result = cursor.fetchone()
-        conn.close()
-        
-        if result:
-            # Get the code, skipping the tag line
-            code_lines = result[0].split('\n')
-            code = '\n'.join(line for line in code_lines if not line.startswith('# tag ='))
-            
-            # Send to your local server
-            response = requests.post(f'{NGROK_ADDRESS}/execute', 
-                                  json={'code': code})
-            if stdout.getvalue():
-                return stdout.getvalue()
-            elif stderr.getvalue():
-                return stderr.getvalue()
-            return "success=True"
-        else:
-            return f"No code block found with tag '{tag_name}'"
-            
-    except Exception as e:
-        return f"Error: {e}"
-```        
+# Generate a secure random key
+secret_key = secrets.token_bytes(32)  # 256 bits
+# Convert to base64 for easier storage/transmission
+secret_key_b64 = base64.b64encode(secret_key).decode()
 
-Now, any cell you want to pass to your local, you can simple run
+print("Your secret key (save this somewhere safe):")
+print(secret_key_b64)
+```
 
-`get_call_by_tag("TAGNAME")` and it will pass that code to your local interpreter. 
+and then save it to your solveit:
+
+```
+with open('server_secret.key', 'w') as f:
+    f.write(secret_key_b64) 
+```
+
+You should next save the secret key as a file in the same directory that you run the local server.
+
+
+## Setting up on remote. 
+
+We are using jupyter magic to know which cells to send to the local computer.
+
+You'll need to set an environment variable `NGROK_ADDRESS` to the endpoint that ngrok forwards your ip to.
+
+You'll also need to put the contents of `remote_cell.py` into one of the cells.
+
