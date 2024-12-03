@@ -28,27 +28,33 @@ def decrypt_message(encrypted: str, key: str) -> str:
     return decrypted.decode()
     
 from IPython.core.magic import register_cell_magic
-import requests, base64, secrets, hashlib
-
-# Copy the same encrypt_message/decrypt_message functions from above
+import requests, base64, secrets, hashlib, json
 
 @register_cell_magic
 def local(line, cell):
     with open('server_secret.key') as f:
         secret_key = f.read().strip()
     
-    encrypted_code = encrypt_message(cell, secret_key)
-    response = requests.post(
-        f'{NGROK_ADDRESS}/execute', 
-        json={'encrypted_code': encrypted_code}
-    )
-    
-    if response.status_code != 200:
-        print(f"Error: {response.status_code} - {response.text}")
-        return
-        
     try:
-        data = response.json()
+        signature = create_signature(generate_code_hash(cell), secret_key)
+        encrypted_code = encrypt_message(cell, secret_key)
+        
+        response = requests.post(
+            f'{NGROK_ADDRESS}/execute', 
+            json={
+                'encrypted_code': encrypted_code,
+                'signature': signature
+            }
+        )
+        
+        if response.status_code != 200:
+            print(f"Error: {response.status_code} - {response.text}")
+            return
+        
+        # Decrypt the response and parse JSON
+        decrypted_response = decrypt_message(response.text, secret_key)
+        data = json.loads(decrypted_response)
+        
         if data.get('stdout'):
             print(data['stdout'], end='')
         elif data.get('stderr'):
@@ -58,4 +64,5 @@ def local(line, cell):
         else:
             print("success=True")
     except Exception as e:
-        print(f"Failed to parse response: {e}")
+        print(f"Exception occurred: {str(e)}")
+        raise
