@@ -72,3 +72,6 @@ You'll need to set an environment variable `NGROK_ADDRESS` to the endpoint that 
 
 You'll also need to put the contents of `remote_cell.py` into one of the cells.
 
+## Usage 
+
+Once the local server is running, and the remote_cell.py has been run, your NGROK_ADDRESS variable is set correctly and a secret is shared between the computers, you can start any cell with the magic `%%local` and it will transmit it to your server and show any output from the command (or success=True if there was no output). 
